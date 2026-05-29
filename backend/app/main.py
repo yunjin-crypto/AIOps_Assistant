@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.chat import router as chat_router
+from app.api.log import router as log_router
 
 app = FastAPI(
     title="AI Ops Assistant"
@@ -18,7 +19,14 @@ app.add_middleware(
 
 app.include_router(
     chat_router,
-    prefix="/api"
+    prefix="/api",
+    tags=["Chat"]
+)
+
+app.include_router(
+    log_router,
+    prefix="/api",
+    tags=["Log"]
 )
 
 @app.get("/")

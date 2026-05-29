@@ -1,6 +1,7 @@
 from openai import AsyncOpenAI
 
 from app.core.config import settings
+from services.prompt_service import LOG_ANALYSIS_PROMPT
 
 
 class LLMService:
@@ -14,15 +15,19 @@ class LLMService:
 
     async def generate(
         self,
-        message: str,
+        log_text: str,
     ) -> str:
 
         response = await self.client.chat.completions.create(
             model="deepseek-v4-flash",
             messages=[
                 {
+                    "role": "system",
+                    "content": LOG_ANALYSIS_PROMPT,
+                },
+                {
                     "role": "user",
-                    "content": message,
+                    "content": log_text,
                 }
             ],
             temperature=0.7,
