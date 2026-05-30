@@ -3,3 +3,9 @@ uvicorn
 pydantic
 openai
 pydantic-settings
+python-multipart
+pdfplumber
+python-docx
+sentence-transformers
+faiss-cpu
+numpy

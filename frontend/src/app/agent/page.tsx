@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { diagnoseWithAgent } from "@/lib/api";
+import { diagnoseWithAgent, ragQuery, type SourceInfo } from "@/lib/api";
+import { useRAG } from "@/components/RAGProvider";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -27,8 +28,10 @@ export default function AgentPage() {
     }
   }, []);
   const [result, setResult] = useState("");
+  const [sources, setSources] = useState<SourceInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [jsonError, setJsonError] = useState("");
+  const { ragEnabled, topK } = useRAG();
 
   const handleDiagnose = async () => {
     if (!content.trim()) return;
@@ -47,9 +50,16 @@ export default function AgentPage() {
 
     setLoading(true);
     setJsonError("");
+    setSources([]);
     try {
-      const data = await diagnoseWithAgent(content, logAnalysis);
-      setResult(data.result);
+      if (ragEnabled) {
+        const data = await ragQuery(content, "agent", topK, logAnalysis);
+        setResult(data.answer);
+        setSources(data.sources);
+      } else {
+        const data = await diagnoseWithAgent(content, logAnalysis);
+        setResult(data.result);
+      }
     } catch (error) {
       console.error(error);
       setResult("诊断失败，请稍后再试");
@@ -210,6 +220,33 @@ export default function AgentPage() {
                 >
                   {result}
                 </ReactMarkdown>
+
+                {/* RAG 参考来源 */}
+                {sources.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2">
+                      📎 参考来源
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {sources.map((s, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900/20 text-xs text-green-700 dark:text-green-300"
+                          title={s.preview}
+                        >
+                          {s.filename.endsWith(".pdf")
+                            ? "📕"
+                            : s.filename.endsWith(".docx")
+                            ? "📘"
+                            : "📝"}
+                          <span className="max-w-[120px] truncate">
+                            {s.filename}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-center h-32 text-slate-400 dark:text-slate-500 text-sm">

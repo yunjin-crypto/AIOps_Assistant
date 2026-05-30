@@ -15,7 +15,8 @@ async def chat(request: ChatRequest):
     try:
 
         answer = await chat_service.generate(
-            request.message
+            user_content=request.message,
+            messages=[m.model_dump() for m in request.messages] if request.messages else None,
         )
 
         return ChatResponse(

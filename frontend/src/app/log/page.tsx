@@ -2,21 +2,31 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { analyzeLog } from "@/lib/api";
+import { analyzeLog, ragQuery, type SourceInfo } from "@/lib/api";
+import { useRAG } from "@/components/RAGProvider";
 
 export default function LogPage() {
   const [log, setLog] = useState("");
   const [result, setResult] = useState("");
+  const [sources, setSources] = useState<SourceInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { ragEnabled, topK } = useRAG();
 
   const analyze = async () => {
     if (!log.trim()) return;
 
     setLoading(true);
+    setSources([]);
     try {
-      const data = await analyzeLog(log);
-      setResult(data.result);
+      if (ragEnabled) {
+        const data = await ragQuery(log, "log", topK);
+        setResult(data.answer);
+        setSources(data.sources);
+      } else {
+        const data = await analyzeLog(log);
+        setResult(data.result);
+      }
     } catch (error) {
       console.error(error);
       setResult("分析失败，请稍后再试");
@@ -103,9 +113,33 @@ export default function LogPage() {
                 </span>
               </div>
             ) : result ? (
-              <pre className="max-h-[400px] overflow-auto rounded-lg bg-slate-100 p-4 text-sm font-mono text-slate-800 leading-relaxed whitespace-pre-wrap dark:bg-slate-900 dark:text-slate-200">
-                {formattedResult}
-              </pre>
+              <div>
+                <pre className="max-h-[400px] overflow-auto rounded-lg bg-slate-100 p-4 text-sm font-mono text-slate-800 leading-relaxed whitespace-pre-wrap dark:bg-slate-900 dark:text-slate-200">
+                  {formattedResult}
+                </pre>
+
+                {/* RAG 参考来源 */}
+                {sources.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+                      📎 参考来源
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {sources.map((s, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900/20 text-xs text-green-700 dark:text-green-300"
+                          title={s.preview}
+                        >
+                          <span className="max-w-[120px] truncate">
+                            {s.filename}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="flex items-center justify-center h-32 text-slate-400 dark:text-slate-500 text-sm">
                 <p>点击"分析日志"后，结果将显示在这里</p>

@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { sendMessage } from "@/lib/api";
+import { sendMessage, ragQuery, type SourceInfo, type ChatMessage } from "@/lib/api";
+import { useRAG } from "@/components/RAGProvider";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
+  sources?: SourceInfo[];
 }
 
 export default function Home() {
@@ -15,6 +17,8 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const { ragEnabled, topK } = useRAG();
+  const MAX_ROUNDS = 10; // 保留最近 10 轮对话
 
   // 自动滚动到最新消息
   useEffect(() => {
@@ -24,27 +28,40 @@ export default function Home() {
   async function handleSend() {
     if (!input.trim()) return;
 
-    const userMessage = input;
+    const userMessage: Message = {
+      role: "user",
+      content: input,
+    };
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "user",
-        content: userMessage,
-      },
-    ]);
+    // 构建多轮对话 history：最近 MAX_ROUNDS-1 轮 + 当前新消息
+    const recentHistory = messages.slice(-(MAX_ROUNDS * 2 - 2));
+    const fullMessages: ChatMessage[] = [...recentHistory, userMessage].map(
+      (m) => ({ role: m.role, content: m.content })
+    );
 
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
 
     try {
-      const data = await sendMessage(userMessage);
+      let answer: string;
+      let sources: SourceInfo[] | undefined;
+
+      if (ragEnabled) {
+        const data = await ragQuery(input, "chat", topK, null, fullMessages);
+        answer = data.answer;
+        sources = data.sources;
+      } else {
+        const data = await sendMessage(fullMessages);
+        answer = data.answer;
+      }
 
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: data.answer,
+          content: answer,
+          sources,
         },
       ]);
     } catch (error) {
@@ -90,28 +107,57 @@ export default function Home() {
                 }`}
               >
                 {msg.role === "assistant" ? (
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
-                      code: ({ className, children, ...props }) => {
-                        const isInline = !className;
-                        return isInline ? (
-                          <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-sm" {...props}>
-                            {children}
-                          </code>
-                        ) : (
-                          <pre className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg overflow-x-auto my-2">
-                            <code className={className} {...props}>
+                  <div>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+                        code: ({ className, children, ...props }) => {
+                          const isInline = !className;
+                          return isInline ? (
+                            <code className="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-sm" {...props}>
                               {children}
                             </code>
-                          </pre>
-                        );
-                      },
-                    }}
-                  >
-                    {msg.content}
-                  </ReactMarkdown>
+                          ) : (
+                            <pre className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg overflow-x-auto my-2">
+                              <code className={className} {...props}>
+                                {children}
+                              </code>
+                            </pre>
+                          );
+                        },
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+
+                    {/* RAG 参考来源 */}
+                    {msg.sources && msg.sources.length > 0 && (
+                      <div className="mt-3 pt-2 border-t border-slate-200 dark:border-slate-600">
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+                          📎 参考来源
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {msg.sources.map((s, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900/20 text-xs text-green-700 dark:text-green-300"
+                              title={s.preview}
+                            >
+                              {s.filename.endsWith(".pdf")
+                                ? "📕"
+                                : s.filename.endsWith(".docx")
+                                ? "📘"
+                                : "📝"}
+                              <span className="max-w-[120px] truncate">
+                                {s.filename}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <span>{msg.content}</span>
                 )}

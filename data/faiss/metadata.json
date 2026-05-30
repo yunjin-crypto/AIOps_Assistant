@@ -1,0 +1,52 @@
+{
+  "0": {
+    "filename": "测试文本1.md",
+    "chunk_index": 0,
+    "text": "\\# AI运维助手测试知识库\n\n\n\n\\## 第一章 Kubernetes Pod故障处理\n\n\n\n\\### CrashLoopBackOff\n\n\n\n当Pod状态出现CrashLoopBackOff时，表示容器启动后立即退出，并进入持续重启状态。\n\n\n\n常见原因：\n\n\n\n1\\. 应用启动失败\n\n2\\. 配置文件错误\n\n3\\. 环境变量缺失\n\n4\\. 数据库连接失败\n\n5\\. 端口占用\n\n6\\. 镜像版本错误\n\n\n\n排查命令：\n\n\n\n```bash\n\nkubectl describe pod <pod-name>\n\n```\n\n\n\n查看日志：\n\n\n\n```bash\n\nkubectl logs <pod-name>\n\n```\n\n\n\n查看历史日志：\n\n\n\n```bash\n\nkubectl logs --previous <pod-name>\n\n```\n\n\n\n标准处理流程：\n\n\n\n步骤1：查看Pod事件\n\n\n\n步骤2：查看容器日志\n\n\n\n步骤3：检查ConfigMap\n\n\n\n步骤4：检查Secret\n\n\n\n步骤5：检查镜像版本\n\n\n\n步骤6：检查依赖服务\n\n\n\n\\---"
+  },
+  "1": {
+    "filename": "测试文本1.md",
+    "chunk_index": 1,
+    "text": "步骤1：查看Pod事件\n\n\n\n步骤2：查看容器日志\n\n\n\n步骤3：检查ConfigMap\n\n\n\n步骤4：检查Secret\n\n\n\n步骤5：检查镜像版本\n\n\n\n步骤6：检查依赖服务\n\n\n\n\\---\n\n\n\n\\### ImagePullBackOff\n\n\n\nImagePullBackOff表示镜像拉取失败。\n\n\n\n常见原因：\n\n\n\n1\\. 镜像名称错误\n\n2\\. 镜像仓库不可达\n\n3\\. 镜像不存在\n\n4\\. Harbor认证失败\n\n5\\. DockerHub限流\n\n\n\n排查命令：\n\n\n\n```bash\n\nkubectl describe pod\n\n```\n\n\n\n检查：\n\n\n\nEvents字段。\n\n\n\n\\---\n\n\n\n\\### Node NotReady\n\n\n\nNode NotReady表示节点失去正常工作能力。\n\n\n\n检查命令：\n\n\n\n```bash\n\nkubectl get nodes\n\n```\n\n\n\n查看节点详情：\n\n\n\n```bash\n\nkubectl describe node <node-name>\n\n```\n\n\n\n常见原因：\n\n\n\n1\\. kubelet异常"
+  },
+  "2": {
+    "filename": "测试文本1.md",
+    "chunk_index": 2,
+    "text": "nodes\n\n```\n\n\n\n查看节点详情：\n\n\n\n```bash\n\nkubectl describe node <node-name>\n\n```\n\n\n\n常见原因：\n\n\n\n1\\. kubelet异常\n\n2\\. 容器运行时异常\n\n3\\. 网络故障\n\n4\\. 磁盘满\n\n5\\. 内存不足\n\n\n\n处理步骤：\n\n\n\n重启kubelet：\n\n\n\n```bash\n\nsystemctl restart kubelet\n\n```\n\n\n\n查看状态：\n\n\n\n```bash\n\nsystemctl status kubelet\n\n```\n\n\n\n\\---\n\n\n\n\\## 第二章 Redis运维手册\n\n\n\n\\### Redis主从同步失败\n\n\n\n现象：\n\n\n\nslave状态持续显示：\n\n\n\n```text\n\nmaster\\_link\\_status:down\n\n```\n\n\n\n排查命令：\n\n\n\n```bash\n\nredis-cli info replication\n\n```\n\n\n\n重点字段：\n\n\n\nmaster\\_link\\_status\n\n\n\nslave\\_repl\\_offset"
+  },
+  "3": {
+    "filename": "测试文本1.md",
+    "chunk_index": 3,
+    "text": "```bash\n\nredis-cli info replication\n\n```\n\n\n\n重点字段：\n\n\n\nmaster\\_link\\_status\n\n\n\nslave\\_repl\\_offset\n\n\n\nmaster\\_repl\\_offset\n\n\n\n常见原因：\n\n\n\n1\\. 网络中断\n\n2\\. 防火墙阻断\n\n3\\. replication backlog不足\n\n4\\. 主节点重启\n\n5\\. Redis版本不兼容\n\n\n\n处理流程：\n\n\n\n第一步：\n\n\n\n检查网络连通性\n\n\n\n```bash\n\nping master-ip\n\n```\n\n\n\n第二步：\n\n\n\n检查端口\n\n\n\n```bash\n\ntelnet master-ip 6379\n\n```\n\n\n\n第三步：\n\n\n\n重新同步\n\n\n\n```bash\n\nslaveof no one\n\nslaveof master-ip 6379\n\n```\n\n\n\n\\---\n\n\n\n\\### Redis内存占满\n\n\n\n查看内存：\n\n\n\n```bash\n\nredis-cli info memory\n\n```\n\n\n\n重点指标：\n\n\n\nused\\_memory"
+  },
+  "4": {
+    "filename": "测试文本1.md",
+    "chunk_index": 4,
+    "text": "\\---\n\n\n\n\\### Redis内存占满\n\n\n\n查看内存：\n\n\n\n```bash\n\nredis-cli info memory\n\n```\n\n\n\n重点指标：\n\n\n\nused\\_memory\n\n\n\nused\\_memory\\_human\n\n\n\nmaxmemory\n\n\n\n常见原因：\n\n\n\n1\\. key数量过多\n\n2\\. 大Key\n\n3\\. 缓存未淘汰\n\n\n\n检查大Key：\n\n\n\n```bash\n\nredis-cli --bigkeys\n\n```\n\n\n\n推荐淘汰策略：\n\n\n\n```text\n\nallkeys-lru\n\n```\n\n\n\n不推荐：\n\n\n\n```text\n\nnoeviction\n\n```\n\n\n\n\\---\n\n\n\n\\### Redis频繁宕机\n\n\n\n排查顺序：\n\n\n\n1\\. 查看系统日志\n\n2\\. 查看Redis日志\n\n3\\. 查看内存使用率\n\n4\\. 查看CPU使用率\n\n5\\. 查看磁盘空间\n\n\n\n检查命令：\n\n\n\n```bash\n\ntop\n\n```\n\n\n\n```bash\n\nfree -m\n\n```\n\n\n\n```bash\n\ndf -h\n\n```\n\n\n\n\\---"
+  },
+  "5": {
+    "filename": "测试文本1.md",
+    "chunk_index": 5,
+    "text": "5\\. 查看磁盘空间\n\n\n\n检查命令：\n\n\n\n```bash\n\ntop\n\n```\n\n\n\n```bash\n\nfree -m\n\n```\n\n\n\n```bash\n\ndf -h\n\n```\n\n\n\n\\---\n\n\n\n\\## 第三章 Nginx运维指南\n\n\n\n\\### 502 Bad Gateway\n\n\n\n502错误表示上游服务异常。\n\n\n\n检查：\n\n\n\n```bash\n\ntail -f /var/log/nginx/error.log\n\n```\n\n\n\n常见原因：\n\n\n\n1\\. 后端服务未启动\n\n2\\. 后端超时\n\n3\\. 网络不通\n\n4\\. upstream配置错误\n\n\n\n处理步骤：\n\n\n\n检查后端端口：\n\n\n\n```bash\n\nnetstat -lntp\n\n```\n\n\n\n检查配置：\n\n\n\n```bash\n\nnginx -t\n\n```\n\n\n\n重新加载：\n\n\n\n```bash\n\nnginx -s reload\n\n```\n\n\n\n\\---\n\n\n\n\\### 504 Gateway Timeout\n\n\n\n504表示网关超时。\n\n\n\n优化参数：\n\n\n\n```nginx"
+  },
+  "6": {
+    "filename": "测试文本1.md",
+    "chunk_index": 6,
+    "text": "`bash\n\nnginx -s reload\n\n```\n\n\n\n\\---\n\n\n\n\\### 504 Gateway Timeout\n\n\n\n504表示网关超时。\n\n\n\n优化参数：\n\n\n\n```nginx\n\nproxy\\_connect\\_timeout 60;\n\nproxy\\_send\\_timeout 60;\n\nproxy\\_read\\_timeout 60;\n\n```\n\n\n\n常见原因：\n\n\n\n1\\. SQL执行过慢\n\n2\\. Redis阻塞\n\n3\\. 网络延迟\n\n\n\n\\---\n\n\n\n\\## 第四章 Linux系统运维\n\n\n\n\\### CPU使用率过高\n\n\n\n查看：\n\n\n\n```bash\n\ntop\n\n```\n\n\n\n```bash\n\nhtop\n\n```\n\n\n\n```bash\n\nmpstat -P ALL\n\n```\n\n\n\n重点指标：\n\n\n\nuser\n\n\n\nsystem\n\n\n\niowait\n\n\n\nidle\n\n\n\n如果iowait超过30%，通常表示磁盘IO存在瓶颈。\n\n\n\n\\---\n\n\n\n\\### 内存不足\n\n\n\n查看：\n\n\n\n```bash\n\nfree -m\n\n```\n\n\n\n查看详细："
+  },
+  "7": {
+    "filename": "测试文本1.md",
+    "chunk_index": 7,
+    "text": "dle\n\n\n\n如果iowait超过30%，通常表示磁盘IO存在瓶颈。\n\n\n\n\\---\n\n\n\n\\### 内存不足\n\n\n\n查看：\n\n\n\n```bash\n\nfree -m\n\n```\n\n\n\n查看详细：\n\n\n\n```bash\n\ncat /proc/meminfo\n\n```\n\n\n\n重点关注：\n\n\n\nMemAvailable\n\n\n\nSwapFree\n\n\n\nCached\n\n\n\nBuffers\n\n\n\n\\---\n\n\n\n\\### 磁盘空间满\n\n\n\n查看：\n\n\n\n```bash\n\ndf -h\n\n```\n\n\n\n查看目录占用：\n\n\n\n```bash\n\ndu -sh \\*\n\n```\n\n\n\n快速定位：\n\n\n\n```bash\n\ndu -sh /\\* | sort -hr\n\n```\n\n\n\n\\---\n\n\n\n\\## 第五章 常见面试题知识\n\n\n\n问题：\n\n\n\nKubernetes中CrashLoopBackOff是什么意思？\n\n\n\n答案：\n\n\n\n容器启动后异常退出，Kubernetes持续重启容器导致出现CrashLoopBackOff状态。\n\n\n\n\\---\n\n\n\n问题：\n\n\n\nRedis主从同步失败优先检查什么？"
+  },
+  "8": {
+    "filename": "测试文本1.md",
+    "chunk_index": 8,
+    "text": "答案：\n\n\n\n容器启动后异常退出，Kubernetes持续重启容器导致出现CrashLoopBackOff状态。\n\n\n\n\\---\n\n\n\n问题：\n\n\n\nRedis主从同步失败优先检查什么？\n\n\n\n答案：\n\n\n\n优先检查网络连通性和master\\_link\\_status状态。\n\n\n\n\\---\n\n\n\n问题：\n\n\n\nRedis查看主从状态使用什么命令？\n\n\n\n答案：\n\n\n\nredis-cli info replication\n\n\n\n\\---\n\n\n\n问题：\n\n\n\nNginx出现502错误最常见原因是什么？\n\n\n\n答案：\n\n\n\n后端服务未启动或者upstream配置错误。\n\n\n\n\\---\n\n\n\n问题：\n\n\n\nLinux查看内存使用情况最常用命令是什么？\n\n\n\n答案：\n\n\n\nfree -m\n\n\n\n\\---\n\n\n\n问题：\n\n\n\nLinux查看磁盘使用率最常用命令是什么？\n\n\n\n答案：\n\n\n\ndf -h\n\n\n\n\\---\n\n\n\n问题：\n\n\n\nKubernetes查看Pod日志使用什么命令？\n\n\n\n答案：\n\n\n\nkubectl logs <pod-name>\n\n\n\n\\---\n\n\n\n问题："
+  },
+  "9": {
+    "filename": "测试文本1.md",
+    "chunk_index": 9,
+    "text": "f -h\n\n\n\n\\---\n\n\n\n问题：\n\n\n\nKubernetes查看Pod日志使用什么命令？\n\n\n\n答案：\n\n\n\nkubectl logs <pod-name>\n\n\n\n\\---\n\n\n\n问题：\n\n\n\nNode NotReady最先检查哪个服务？\n\n\n\n答案：\n\n\n\nkubelet服务。\n\n\n\n检查命令：\n\n\n\n```bash\n\nsystemctl status kubelet\n\n```\n\n\n\n\\---\n\n\n\n知识库版本：\n\n\n\nv1.0\n\n\n\n维护人：\n\n\n\nDevOps Team\n\n\n\n最后更新时间：\n\n\n\n2026-05-30"
+  }
+}
