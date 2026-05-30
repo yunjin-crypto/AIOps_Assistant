@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from app.schemas.chat import ChatRequest, ChatResponse
-from app.services.llm_service_chat import llm_service
+from app.services.llm_service import chat_service
 
 router = APIRouter()
 
@@ -14,7 +14,7 @@ async def chat(request: ChatRequest):
 
     try:
 
-        answer = await llm_service.generate(
+        answer = await chat_service.generate(
             request.message
         )
 

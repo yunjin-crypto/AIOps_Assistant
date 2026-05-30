@@ -27,6 +27,13 @@ export default function HomePage() {
           >
             📋 日志分析
           </Link>
+
+          <Link
+            href="/agent"
+            className="block w-full px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 text-white font-medium text-sm hover:from-purple-700 hover:to-pink-600 transition shadow-lg shadow-purple-600/20 active:scale-95"
+          >
+            🤖 智能诊断 Agent
+          </Link>
         </div>
       </div>
     </main>

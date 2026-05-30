@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from app.schemas.log import LogRequest, LogResponse
-from app.services.llm_service_log import llm_service
+from app.services.llm_service import log_service
 
 router = APIRouter()
 
@@ -14,7 +14,7 @@ async def analyze_log(request: LogRequest):
 
     try:
 
-        result = await llm_service.generate(
+        result = await log_service.generate(
             request.log_text
         )
 
