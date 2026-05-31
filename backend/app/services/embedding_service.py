@@ -1,65 +1,76 @@
-"""BGE-M3 向量化服务 - 全局单例"""
-import asyncio
+"""Embedding 向量化服务 - SiliconFlow API (BAAI/bge-m3)"""
+import logging
 from typing import List
 
 import numpy as np
+from openai import AsyncOpenAI
 
-# 延迟加载，避免在未安装时导入失败
-_model = None
-_model_lock = asyncio.Lock()
+from app.core.config import settings
 
 MODEL_NAME = "BAAI/bge-m3"
 VECTOR_DIM = 1024
 
+# 单次 API 调用最大文本数（保守值，避免超 token 上限）
+MAX_TEXTS_PER_BATCH = 100
 
-def _load_model():
-    """同步加载模型（在启动时调用一次）"""
-    global _model
-    if _model is None:
-        from sentence_transformers import SentenceTransformer
-        _model = SentenceTransformer(MODEL_NAME)
-    return _model
+_client: AsyncOpenAI | None = None
+_logger = logging.getLogger("uvicorn.info")
 
 
-def get_model():
-    """获取模型实例（确保已加载）"""
-    global _model
-    if _model is None:
-        _load_model()
-    return _model
-
-
-def encode_sync(texts: List[str]) -> np.ndarray:
-    """
-    同步编码文本列表
-    返回归一化后的 numpy 数组，shape=(n, 1024)
-    """
-    model = get_model()
-    # BGE-M3 使用 normalize_embeddings=True 做 L2 归一化
-    embeddings = model.encode(
-        texts,
-        normalize_embeddings=True,
-        show_progress_bar=False,
-    )
-    return np.array(embeddings, dtype=np.float32)
+def _get_client() -> AsyncOpenAI:
+    """懒加载 AsyncOpenAI 客户端"""
+    global _client
+    if _client is None:
+        _client = AsyncOpenAI(
+            api_key=settings.EMBEDDING_API_KEY,
+            base_url=settings.EMBEDDING_BASE_URL,
+        )
+    return _client
 
 
 async def encode(texts: List[str]) -> np.ndarray:
-    """异步包装 encode_sync，避免阻塞事件循环"""
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, encode_sync, texts)
+    """
+    调用 SiliconFlow Embedding API 编码文本列表。
+
+    参数:
+        texts: 待编码的文本列表
+
+    返回:
+        归一化后的 numpy 数组，shape=(n, 1024)，dtype=float32
+    """
+    if not texts:
+        return np.empty((0, VECTOR_DIM), dtype=np.float32)
+
+    client = _get_client()
+    all_embeddings: list[list[float]] = []
+
+    # 分批调用，避免单次请求超 token 上限
+    for i in range(0, len(texts), MAX_TEXTS_PER_BATCH):
+        batch = texts[i : i + MAX_TEXTS_PER_BATCH]
+        response = await client.embeddings.create(
+            model=MODEL_NAME,
+            input=batch,
+            encoding_format="float",
+        )
+        # 按 index 排序后收集
+        sorted_items = sorted(response.data, key=lambda x: x.index)
+        for item in sorted_items:
+            all_embeddings.append(item.embedding)
+
+    return np.array(all_embeddings, dtype=np.float32)
 
 
 async def preload_model():
     """
-    在服务启动时预加载 BGE-M3 模型。
+    启动时验证 Embedding API 可用性。
 
-    如果不预加载，首个 RAG 查询会触发延迟加载（CPU 上约 20-30 秒），
-    导致前端请求超时 / 卡死。
+    发送一条测试调用，确认 API Key 有效、网络可达。
+    如果验证失败则抛出异常，阻止服务启动。
     """
-    import logging
-    logger = logging.getLogger("uvicorn.info")
-    logger.info("正在加载 BGE-M3 嵌入模型 (BAAI/bge-m3)，首次启动可能需要 20-30 秒...")
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, get_model)
-    logger.info("BGE-M3 模型加载完成")
+    _logger.info("正在验证 SiliconFlow Embedding API (BAAI/bge-m3)...")
+    try:
+        await encode(["ping"])
+        _logger.info("SiliconFlow Embedding API 验证通过")
+    except Exception as e:
+        _logger.error(f"Embedding API 验证失败: {e}")
+        raise

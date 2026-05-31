@@ -8,6 +8,10 @@ class Settings(BaseSettings):
 
     OPENAI_BASE_URL: str = ""
 
+    EMBEDDING_API_KEY: str = ""
+
+    EMBEDDING_BASE_URL: str = "https://api.siliconflow.cn/v1"
+
     class Config:
         env_file = ".env"
 

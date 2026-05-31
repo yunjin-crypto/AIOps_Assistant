@@ -6,7 +6,6 @@ pydantic-settings
 python-multipart
 pdfplumber
 python-docx
-sentence-transformers
 faiss-cpu
 numpy
 sse-starlette

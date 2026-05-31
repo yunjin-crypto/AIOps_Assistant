@@ -4,7 +4,7 @@ from typing import List, Dict, Optional
 
 import numpy as np
 
-from app.services.embedding_service import encode, encode_sync
+from app.services.embedding_service import encode
 from app.services.vector_store import vector_store
 from app.services.document_service import (
     process_file,
