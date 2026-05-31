@@ -1,0 +1,33 @@
+{
+  "id": "rag_enhanced_qa",
+  "name": "知识增强问答",
+  "description": "先检索知识库，再用检索结果增强回答。适用于需要参考运维文档的问题。",
+  "steps": [
+    {
+      "id": "retrieve",
+      "type": "rag_query",
+      "input_mapping": {
+        "question": "$input.question",
+        "top_k": 5
+      },
+      "depends_on": [],
+      "config": {
+        "top_k": 5
+      }
+    },
+    {
+      "id": "answer",
+      "type": "chat",
+      "input_mapping": {
+        "message": "【用户问题】\n$input.question\n\n【知识库检索结果】\n$retrieve.output\n\n请综合知识库内容和你的专业知识回答用户问题。"
+      },
+      "depends_on": [
+        "retrieve"
+      ],
+      "config": {}
+    }
+  ],
+  "output_step": "answer",
+  "created_at": "2026-05-30T17:42:37",
+  "updated_at": "2026-05-30T17:42:37"
+}

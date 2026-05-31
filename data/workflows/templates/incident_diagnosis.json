@@ -1,0 +1,58 @@
+{
+  "id": "incident_diagnosis",
+  "name": "故障诊断流程",
+  "description": "日志分析 → Agent 诊断 → RAG 知识库检索 → 综合报告。适用于收到异常日志后的一站式诊断。",
+  "steps": [
+    {
+      "id": "analyze_logs",
+      "type": "log_analysis",
+      "input_mapping": {
+        "log_text": "$input.logs"
+      },
+      "depends_on": [],
+      "config": {}
+    },
+    {
+      "id": "diagnose",
+      "type": "agent_diagnosis",
+      "input_mapping": {
+        "content": "$input.error_description",
+        "log_analysis": "$analyze_logs.output"
+      },
+      "depends_on": [
+        "analyze_logs"
+      ],
+      "config": {}
+    },
+    {
+      "id": "search_knowledge",
+      "type": "rag_query",
+      "input_mapping": {
+        "question": "$diagnose.output",
+        "top_k": 5
+      },
+      "depends_on": [
+        "diagnose"
+      ],
+      "config": {
+        "top_k": 5
+      }
+    },
+    {
+      "id": "generate_report",
+      "type": "chat",
+      "input_mapping": {
+        "message": "请根据以下信息生成一份运维故障报告：\n\n【原始异常】\n$input.error_description\n\n【日志分析】\n$analyze_logs.output\n\n【故障诊断】\n$diagnose.output\n\n【知识库参考】\n$search_knowledge.output\n\n请包含：故障概述、根因分析、影响范围、排查过程、解决方案、预防措施。"
+      },
+      "depends_on": [
+        "search_knowledge"
+      ],
+      "config": {
+        "temperature": 0.3
+      }
+    }
+  ],
+  "output_step": "generate_report",
+  "created_at": "2026-05-30T17:42:37",
+  "updated_at": "2026-05-30T17:42:37"
+}

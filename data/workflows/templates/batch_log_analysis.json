@@ -1,0 +1,32 @@
+{
+  "id": "batch_log_analysis",
+  "name": "批量日志分析",
+  "description": "并行分析多份日志，最后汇总生成综合报告。日志以列表形式传入。",
+  "steps": [
+    {
+      "id": "analyze_all",
+      "type": "log_analysis",
+      "input_mapping": {
+        "log_text": "$input.logs"
+      },
+      "depends_on": [],
+      "config": {}
+    },
+    {
+      "id": "summarize",
+      "type": "chat",
+      "input_mapping": {
+        "message": "请对以下多份日志分析结果进行汇总，生成综合报告：\n\n$analyze_all.output\n\n请汇总：共性问题、优先级排序、建议处理顺序。"
+      },
+      "depends_on": [
+        "analyze_all"
+      ],
+      "config": {
+        "temperature": 0.3
+      }
+    }
+  ],
+  "output_step": "summarize",
+  "created_at": "2026-05-30T17:42:37",
+  "updated_at": "2026-05-30T17:42:37"
+}

@@ -4,6 +4,7 @@ from app.api.chat import router as chat_router
 from app.api.log import router as log_router
 from app.api.agent import router as agent_router
 from app.api.rag import router as rag_router
+from app.api.workflow import router as workflow_router
 
 app = FastAPI(
     title="AI Ops Assistant"
@@ -41,6 +42,20 @@ app.include_router(
     prefix="/api",
     tags=["RAG"]
 )
+
+app.include_router(
+    workflow_router,
+    prefix="/api",
+    tags=["Workflow"]
+)
+
+
+@app.on_event("startup")
+async def startup():
+    """启动时预加载 BGE-M3 模型，避免首次 RAG 查询卡死"""
+    from app.services.embedding_service import preload_model
+    await preload_model()
+
 
 @app.get("/")
 async def root():

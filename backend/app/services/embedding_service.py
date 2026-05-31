@@ -48,3 +48,18 @@ async def encode(texts: List[str]) -> np.ndarray:
     """异步包装 encode_sync，避免阻塞事件循环"""
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, encode_sync, texts)
+
+
+async def preload_model():
+    """
+    在服务启动时预加载 BGE-M3 模型。
+
+    如果不预加载，首个 RAG 查询会触发延迟加载（CPU 上约 20-30 秒），
+    导致前端请求超时 / 卡死。
+    """
+    import logging
+    logger = logging.getLogger("uvicorn.info")
+    logger.info("正在加载 BGE-M3 嵌入模型 (BAAI/bge-m3)，首次启动可能需要 20-30 秒...")
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, get_model)
+    logger.info("BGE-M3 模型加载完成")
