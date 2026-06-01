@@ -1,0 +1,53 @@
+# ==========================================
+# AIOps Assistant - Docker Compose
+# ==========================================
+
+services:
+  # ---------- 后端 (FastAPI) ----------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: aiops-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # 持久化 RAG 知识库数据
+      - faiss_data:/data/faiss
+      - docs_data:/data/docs
+      - workflows_data:/data/workflows
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ---------- 前端 (Next.js) ----------
+  frontend:
+    image: node:22-alpine
+    container_name: aiops-frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      # 匿名卷：避免主机 node_modules 覆盖容器内的
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
+    command: >
+      sh -c "npm install && npm run dev"
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
+# ---------- 命名卷 ----------
+volumes:
+  faiss_data:
+  docs_data:
+  workflows_data:
