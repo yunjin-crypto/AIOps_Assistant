@@ -12,6 +12,8 @@ class Settings(BaseSettings):
 
     EMBEDDING_BASE_URL: str = "https://api.siliconflow.cn/v1"
 
+    ALLOWED_ORIGINS: str = "http://localhost:3000"
+
     class Config:
         env_file = ".env"
 

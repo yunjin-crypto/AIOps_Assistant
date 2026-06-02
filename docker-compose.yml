@@ -16,6 +16,8 @@ services:
       - faiss_data:/data/faiss
       - docs_data:/data/docs
       - workflows_data:/data/workflows
+    environment:
+      - ALLOWED_ORIGINS=http://localhost:3000,http://62.234.79.74:3000
     env_file:
       - ./backend/.env
     restart: unless-stopped
@@ -28,19 +30,14 @@ services:
 
   # ---------- 前端 (Next.js) ----------
   frontend:
-    image: node:22-alpine
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://62.234.79.74:8000
     container_name: aiops-frontend
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
-      # 匿名卷：避免主机 node_modules 覆盖容器内的
-      - /app/node_modules
     ports:
       - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
-    command: >
-      sh -c "npm install && npm run dev"
     depends_on:
       backend:
         condition: service_started

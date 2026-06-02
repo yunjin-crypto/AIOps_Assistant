@@ -5,6 +5,7 @@ from app.api.log import router as log_router
 from app.api.agent import router as agent_router
 from app.api.rag import router as rag_router
 from app.api.workflow import router as workflow_router
+from app.core.config import settings
 
 app = FastAPI(
     title="AI Ops Assistant"
@@ -12,9 +13,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000"
-    ],
+    allow_origins=[o.strip() for o in settings.ALLOWED_ORIGINS.split(",")],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
