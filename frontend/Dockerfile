@@ -12,6 +12,7 @@ RUN npm ci
 # 构建时注入 API 地址（NEXT_PUBLIC_* 在 build 时内联进 JS）
 ARG NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NODE_ENV=production
 
 # 复制源码并构建
 COPY . .
