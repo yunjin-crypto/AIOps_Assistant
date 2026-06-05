@@ -34,6 +34,13 @@ export default function HomePage() {
           >
             🤖 智能诊断 Agent
           </Link>
+
+          <Link
+            href="/workflow"
+            className="block w-full px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 text-white font-medium text-sm hover:from-emerald-700 hover:to-teal-600 transition shadow-lg shadow-emerald-600/20 active:scale-95"
+          >
+            ⚙️ Workflow 编排
+          </Link>
         </div>
       </div>
     </main>

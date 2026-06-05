@@ -146,51 +146,58 @@ flowchart LR
 
 ```
 AIOps_Assistant/
-├── backend/
+├── backend/                          # Python FastAPI 后端
 │   ├── app/
-│   │   ├── main.py                     # FastAPI 入口 · 路由注册
-│   │   ├── core/config.py              # 配置加载 (pydantic-settings)
-│   │   ├── api/
-│   │   │   ├── chat.py                 # M1 对话 API
-│   │   │   ├── log.py                  # M3 日志分析 API
-│   │   │   ├── agent.py                # M4 Agent 诊断 API
-│   │   │   ├── rag.py                  # RAG 知识库 API
-│   │   │   └── workflow.py             # Workflow 编排 API
-│   │   ├── schemas/
-│   │   │   ├── chat.py                 # Chat 请求/响应模型
-│   │   │   ├── log.py                  # Log 请求/响应模型
-│   │   │   ├── agent.py                # Agent 请求/响应模型
-│   │   │   ├── rag.py                  # RAG 请求/响应模型
-│   │   │   └── workflow.py             # Workflow 数据模型
-│   │   └── services/
-│   │       ├── llm_service.py          # LLM 调用封装 (DeepSeek · OpenAI SDK)
-│   │       ├── rag_service.py          # RAG 编排服务
-│   │       ├── embedding_service.py    # BGE-M3 向量化
-│   │       ├── document_service.py     # 文件解析 & 智能分块
-│   │       ├── vector_store.py         # FAISS 向量存储
-│   │       ├── workflow_engine.py      # DAG 执行引擎
-│   │       └── workflow_store.py       # Workflow 存储层 + 预置模板
+│   │   ├── main.py                   # 入口：路由注册 + CORS + 启动预加载
+│   │   ├── core/config.py            # pydantic-settings 配置管理
+│   │   ├── api/                      # 路由层（5 个模块）
+│   │   │   ├── chat.py               # POST /api/chat
+│   │   │   ├── log.py                # POST /api/log
+│   │   │   ├── agent.py              # POST /api/agent
+│   │   │   ├── rag.py                # RAG CRUD: upload/query/documents/delete
+│   │   │   └── workflow.py           # 模板 CRUD + 执行 + SSE
+│   │   ├── schemas/                  # Pydantic 数据模型
+│   │   │   ├── chat.py / log.py / agent.py / rag.py / workflow.py
+│   │   └── services/                 # 业务逻辑层
+│   │       ├── llm_service.py        # LLM 调用封装（OpenAI SDK → DeepSeek）
+│   │       ├── rag_service.py        # RAG 编排：上传→分块→编码→存储→检索→生成
+│   │       ├── embedding_service.py  # BGE-M3 向量化（SiliconFlow API）
+│   │       ├── document_service.py   # 文件解析 + 智能分块
+│   │       ├── vector_store.py       # FAISS 向量存储封装
+│   │       ├── workflow_engine.py    # DAG 执行引擎（拓扑排序 + 并行执行）
+│   │       └── workflow_store.py     # JSON 文件持久化 + 3 个预置模板
 │   ├── services/
-│   │   └── prompt_service.py           # 所有 System Prompt 模板
-│   └── requirements.txt
-├── frontend/
-│   └── src/
-│       ├── app/
-│       │   ├── layout.tsx              # 根布局
-│       │   ├── AppWrapper.tsx          # RAG 状态 Provider
-│       │   ├── chat/page.tsx           # M1 对话页面
-│       │   ├── log/page.tsx            # M3 日志分析页面
-│       │   └── agent/page.tsx          # M4 Agent 诊断页面
-│       ├── components/
-│       │   ├── RAGProvider.tsx         # RAG React Context
-│       │   ├── RAGFloatingButton.tsx   # RAG 浮动开关
-│       │   └── RAGDrawer.tsx           # RAG 侧边抽屉
-│       └── lib/api.ts                  # 后端 API 客户端
+│   │   └── prompt_service.py         # 所有 System Prompt 模板
+│   ├── requirements.txt              # Python 依赖
+│   ├── Dockerfile                     # Python 3.12-slim 镜像
+│   └── .env                           # 密钥配置（DeepSeek + SiliconFlow）
+├── frontend/                          # Next.js 16 + TypeScript
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── layout.tsx            # 根布局（AppWrapper 包裹）
+│   │   │   ├── AppWrapper.tsx        # RAGProvider + 浮动按钮
+│   │   │   ├── page.tsx              # 首页导航（3 个功能入口）
+│   │   │   ├── chat/page.tsx         # 对话页面（多轮对话 + Markdown 渲染）
+│   │   │   ├── log/page.tsx          # 日志分析页面
+│   │   │   ├── agent/page.tsx        # Agent 智能诊断页面
+│   │   │   └── globals.css           # Tailwind 基础样式
+│   │   ├── components/
+│   │   │   ├── RAGProvider.tsx       # RAG React Context（全局状态管理）
+│   │   │   ├── RAGFloatingButton.tsx # 右下角浮动知识库按钮
+│   │   │   └── RAGDrawer.tsx         # 右侧滑出抽屉（开关/上传/删除/检索设置）
+│   │   └── lib/api.ts               # 后端 API 客户端封装（7 个接口）
+│   ├── package.json                  # Next.js 16.2.6, React 19.2.4
+│   ├── tailwind.config.js
+│   └── Dockerfile                     # Node 22-alpine 多阶段构建
 ├── data/
-│   ├── docs/                           # 上传的原始文档
-│   ├── faiss/                          # FAISS 索引 + 元数据
-│   └── workflows/                      # Workflow 模板 & 执行记录
-└── README.md
+│   ├── docs/测试文本1.md              # 测试知识库（K8s/Redis/Nginx/Linux 运维）
+│   ├── faiss/                         # FAISS 索引 + metadata.json
+│   └── workflows/
+│       ├── templates/                 # 3 个预置模板 JSON
+│       └── executions/                # 执行记录 JSON
+├── docker-compose.yml                 # 一键编排（backend + frontend + 命名卷）
+└── README.md                          # 完整项目文档
+
 ```
 
 ## 本地启动

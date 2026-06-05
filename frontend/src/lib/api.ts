@@ -34,6 +34,25 @@ async function apiGet<T>(endpoint: string): Promise<T> {
 }
 
 /**
+ * 内部通用的 PUT 请求工具函数
+ */
+async function apiPut<T>(endpoint: string, body: object): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new Error(`请求失败 (状态码: ${response.status})`);
+  }
+
+  return response.json();
+}
+
+/**
  * 内部通用的 DELETE 请求工具函数
  */
 async function apiDelete<T>(endpoint: string): Promise<T> {
@@ -134,4 +153,177 @@ export async function uploadRagDocument(file: File) {
   }
 
   return response.json();
+}
+
+// ==================== Workflow 编排接口 ====================
+
+// --- 类型定义 ---
+
+export type StepType = "chat" | "log_analysis" | "agent_diagnosis" | "rag_query";
+
+export interface StepDef {
+  id: string;
+  type: StepType;
+  input_mapping: Record<string, unknown>;
+  depends_on: string[];
+  config: Record<string, unknown>;
+}
+
+export interface WorkflowTemplate {
+  id: string;
+  name: string;
+  description: string;
+  steps: StepDef[];
+  output_step: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface WorkflowTemplateListItem {
+  id: string;
+  name: string;
+  description: string;
+  step_count: number;
+  output_step: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type ExecutionStatus = "pending" | "running" | "success" | "failed";
+export type StepStatus = "pending" | "running" | "success" | "failed" | "skipped";
+
+export interface StepResult {
+  step_id: string;
+  step_type: StepType;
+  status: StepStatus;
+  input?: Record<string, unknown> | null;
+  output?: unknown;
+  error?: string | null;
+  started_at?: string | null;
+  finished_at?: string | null;
+}
+
+export interface WorkflowExecution {
+  id: string;
+  template_id: string;
+  template_name: string;
+  status: ExecutionStatus;
+  trigger_input: Record<string, unknown>;
+  step_results: Record<string, StepResult>;
+  final_output?: unknown;
+  error?: string | null;
+  created_at?: string | null;
+  started_at?: string | null;
+  finished_at?: string | null;
+}
+
+export interface WorkflowExecutionListItem {
+  id: string;
+  template_id: string;
+  template_name: string;
+  status: ExecutionStatus;
+  step_count: number;
+  completed_steps: number;
+  created_at?: string | null;
+  finished_at?: string | null;
+}
+
+// --- API 函数 ---
+
+// 8. 获取模板列表
+export async function listWorkflowTemplates() {
+  return apiGet<{ templates: WorkflowTemplateListItem[] }>(
+    "/api/workflow/templates"
+  );
+}
+
+// 9. 获取模板详情（含完整步骤 DAG）
+export async function getWorkflowTemplate(templateId: string) {
+  return apiGet<WorkflowTemplate>(
+    `/api/workflow/templates/${encodeURIComponent(templateId)}`
+  );
+}
+
+// 10. 同步执行 Workflow（等待完成后返回完整结果）
+export async function executeWorkflowSync(
+  templateId: string,
+  input: Record<string, unknown>
+) {
+  return apiPost<WorkflowExecution>("/api/workflow/execute-sync", {
+    template_id: templateId,
+    input,
+  });
+}
+
+// 11. 异步执行 Workflow（立即返回执行 ID）
+export async function executeWorkflowAsync(
+  templateId: string,
+  input: Record<string, unknown>
+) {
+  return apiPost<{ execution_id: string; status: string; message: string }>(
+    "/api/workflow/execute",
+    {
+      template_id: templateId,
+      input,
+    }
+  );
+}
+
+// 12. 获取执行详情
+export async function getWorkflowExecution(executionId: string) {
+  return apiGet<WorkflowExecution>(
+    `/api/workflow/executions/${encodeURIComponent(executionId)}`
+  );
+}
+
+// 13. 获取执行历史
+export async function listWorkflowExecutions(limit = 20) {
+  return apiGet<{ executions: WorkflowExecutionListItem[] }>(
+    `/api/workflow/executions?limit=${limit}`
+  );
+}
+
+// 14. 创建 SSE 连接监听执行进度
+export function createExecutionStream(
+  executionId: string,
+  onUpdate: (execution: WorkflowExecution) => void,
+  onComplete: () => void,
+  onError: (error: string) => void
+): EventSource {
+  const url = `${API_BASE_URL}/api/workflow/executions/${encodeURIComponent(executionId)}/stream`;
+  const es = new EventSource(url);
+
+  es.addEventListener("update", (e) => {
+    try {
+      const data = JSON.parse(e.data) as WorkflowExecution;
+      onUpdate(data);
+    } catch {
+      // 忽略解析错误
+    }
+  });
+
+  es.addEventListener("complete", () => {
+    es.close();
+    onComplete();
+  });
+
+  es.addEventListener("error", (e) => {
+    es.close();
+    try {
+      const data = JSON.parse((e as MessageEvent).data || "{}");
+      onError(data.error || "SSE 连接异常");
+    } catch {
+      onError("SSE 连接异常，请刷新页面重试");
+    }
+  });
+
+  // EventSource 通用错误处理（网络断开等）
+  es.onerror = () => {
+    // readyState 2 = CLOSED，说明连接已终止
+    if (es.readyState === EventSource.CLOSED) {
+      onError("SSE 连接已断开");
+    }
+  };
+
+  return es;
 }
